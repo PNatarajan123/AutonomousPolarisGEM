@@ -40,8 +40,19 @@ class vehicleController():
     def extract_vehicle_info(self, currentPose):
 
         ####################### TODO: Your TASK 1 code starts Here #######################
-        pos_x, pos_y, vel, yaw = 0, 0, 0, 0
+        #pos_x, pos_y, vel, yaw = 0, 0, 0, 0
+        pos_x = currentPose.pose.position.x
+        pos_y = currentPose.pose.position.y
+        vel_x = currentPose.twist.linear.x
+        vel_y = currentPose.twist.linear.y
+        vel = np.sqrt(vel_x**2+vel_y**2)
 
+        x = currentPose.pose.orientation.x
+        y = currentPose.pose.orientation.y
+        z = currentPose.pose.orientation.z
+        w = currentPose.pose.orientation.w
+
+        yaw = quaternion_to_euler(x,y,z,w)[2]
         ####################### TODO: Your Task 1 code ends Here #######################
 
         return pos_x, pos_y, vel, yaw # note that yaw is in radian
@@ -51,8 +62,36 @@ class vehicleController():
     def longititudal_controller(self, curr_x, curr_y, curr_vel, curr_yaw, future_unreached_waypoints):
 
         ####################### TODO: Your TASK 2 code starts Here #######################
+        #target_velocity = 10
+        # 12, 8, 4, 10 (2.3) WORKED 
+        # 14, 8, 3, 10 (2.15) WORKED
+        # 14, 8, 2, 10 (2.25) worked 
+        straight_speed = 12
+        curve_speed = 8
+        angle_threshold = 4
         target_velocity = 10
 
+        wayx, wayy = future_unreached_waypoints[0]
+        direction_to_waypoint = math.atan2(wayy - curr_y, wayx - curr_x)
+
+        curr_yaw = math.atan2(math.sin(curr_yaw), math.cos(curr_yaw))
+        direction_to_waypoint = math.atan2(math.sin(direction_to_waypoint), math.cos(direction_to_waypoint))
+
+        angle_diff = math.degrees(abs(direction_to_waypoint - curr_yaw))
+        if angle_diff > 180:
+            angle_diff = 360 - angle_diff
+
+        if angle_diff < angle_threshold:
+            target_velocity = straight_speed
+        else:
+            target_velocity = curve_speed
+
+            #curr_x, curr_y, curr_vel, curr_yaw -> waypoint (x,y): if it is a straight line, vel = 12, else, vel = 8
+
+            # straight line
+            # if curr_vel == 8 or curr_vel == 10:
+                # return curr_vel + 2
+            # return curr_vel
 
         ####################### TODO: Your TASK 2 code ends Here #######################
         return target_velocity
@@ -62,7 +101,14 @@ class vehicleController():
     def pure_pursuit_lateral_controller(self, curr_x, curr_y, curr_yaw, target_point, future_unreached_waypoints):
 
         ####################### TODO: Your TASK 3 code starts Here #######################
-        target_steering = 0
+        #target_steering = 0
+        L = 1.75
+        wayx, wayy = future_unreached_waypoints[0]
+        LD = np.sqrt((curr_x-wayx)**2 + (curr_y-wayy)**2)
+        alpha = math.atan2(wayy - curr_y, wayx - curr_x) - curr_yaw
+        target_steering = math.atan((2*L*np.sin(alpha))/LD)
+        
+        
 
         ####################### TODO: Your TASK 3 code starts Here #######################
         return target_steering
